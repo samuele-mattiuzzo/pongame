@@ -177,9 +177,10 @@ def main():
             game_over = p1_score + p2_score == MAX_SCORE
 
             if hit:
-                ballX = ORIGIN_X
-                ballY = ORIGIN_Y
-                drawBall(ball)
+                ball.x = ballX = ORIGIN_X
+                ball.y = ballY = ORIGIN_Y
+                hit = False
+                pygame.time.wait(1000)
         else:
             gameOver()
 
