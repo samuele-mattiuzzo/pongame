@@ -8,8 +8,7 @@ class Player:
 
 
 class Ball:
-
-    def __init__(self, x, y, dirX, dirY, ball):
+    def __init__(self, x, y, dirX, dirY):
         self.x = x
         self.y = y
         self.dirX = dirX
