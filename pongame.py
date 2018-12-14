@@ -20,6 +20,12 @@ from config import (
     MAX_SCORE
 )
 
+from objects import (
+    Player,
+    Ball
+)
+
+
 def drawArena():
     DISPLAYSURF.fill((0, 0, 0))
     # draw the outline of arena
@@ -37,41 +43,39 @@ def drawPaddle(paddle):
     pygame.draw.rect(DISPLAYSURF, GREY, paddle)
   
 def drawBall(ball):
-    pygame.draw.rect(DISPLAYSURF, GREY, ball)
+    pygame.draw.rect(DISPLAYSURF, GREY, ball.ball)
 
 # moves the ball, returns new position
-def moveBall(ball, ballDirX, ballDirY):
-    ball.x += (ballDirX * MODIFIER)
-    ball.y += (ballDirY * MODIFIER)
-    return ball
+def moveBall(ball):
+    ball.ball.x += (ball.dirX * MODIFIER)
+    ball.ball.y += (ball.dirY * MODIFIER)
 
 # checks for a collision with a wall, and 'bounces' off it.
-def checkEdgeCollision(ball, ballDirX, ballDirY):
+def checkEdgeCollision(ball):
     if ball.top == (LINETHICKNESS) or ball.bottom == (HEIGHT - LINETHICKNESS):
-        ballDirY = ballDirY * -1
+        ball.dirY = ball.dirY * -1
     if ball.left == (LINETHICKNESS) or ball.right == (WIDTH - LINETHICKNESS):
-        ballDirX = ballDirX * -1
-    return ballDirX, ballDirY
+        ball.dirX = ball.dirX * -1
 
 # checks if the ball has hit a paddle, and 'bounces' off it.     
-def checkPaddleCollision(ball, paddle1, paddle2, ballDirX):
-    if ballDirX == -1 and paddle1.right == ball.left and paddle1.top < ball.top and paddle1.bottom > ball.bottom:
-        return -1
-    elif ballDirX == 1 and paddle2.left == ball.right and paddle2.top < ball.top and paddle2.bottom > ball.bottom:
-        return -1
+def checkPaddleCollision(ball, paddle1, paddle2):
+    if ball.dirX == -1 and paddle1.right == ball.left and paddle1.top < ball.top and paddle1.bottom > ball.bottom:
+        ball.dirX = ball.dirX * -1
+    elif ball.dirX == 1 and paddle2.left == ball.right and paddle2.top < ball.top and paddle2.bottom > ball.bottom:
+        ball.dirX = ball.dirX * -1
     else:
-        return 1
+         ball.dirX = ball.dirX * 1
 
 # computer "ai"      
-def computerMove(ball, ballDirX, paddle2):
+def computerMove(ball, paddle2):
     # if the ball is moving away from the paddle, center
-    if ballDirX == -1:
+    if ball.dirX == -1:
         if paddle2.centery < (HEIGHT/2):
             paddle2.y +=  MODIFIER - random.choice(DIFFICULTY)
         elif paddle2.centery > (HEIGHT/2):
             paddle2.y -=  MODIFIER - random.choice(DIFFICULTY)
     # if the ball moving towards the paddle, track its movement. 
-    elif ballDirX == 1:
+    elif ball.dirX == 1:
         if paddle2.centery < ball.centery:
             paddle2.y +=  MODIFIER - random.choice(DIFFICULTY)
         else:
@@ -82,11 +86,11 @@ def computerMove(ball, ballDirX, paddle2):
 def checkScore(ball, p1_score, p2_score):
     hit = False
     # reset points if left wall is hit
-    if ball.left == LINETHICKNESS: 
+    if ball.ball.left == LINETHICKNESS: 
         p2_score += 1
         hit = True
     # awards 1 point to the player if the right wall is hit
-    elif ball.right == WIDTH - LINETHICKNESS:
+    elif ball.ball.right == WIDTH - LINETHICKNESS:
         p1_score += 1
         hit = True
     # if no points scored, return score unchanged
@@ -129,20 +133,19 @@ def main():
    
     # initiate variables and set starting positions
     # for any future changes made within rectangles
-    ballX = ORIGIN_X
-    ballY = ORIGIN_Y
+    ball = Ball(
+        x = ORIGIN_X, y = ORIGIN_Y,
+        dirX = -1, dirY = -1,
+        ball = pygame.Rect(ORIGIN_X, ORIGIN_Y, LINETHICKNESS, LINETHICKNESS)
+    )
+
     playerOnePosition = playerTwoPosition = int((HEIGHT - PADDLESIZE) /2)
     p1_score = p2_score = 0
     game_over = False
 
-    # keeps track of the ball's direction
-    ballDirX = -1   # -1 = left 1 = right
-    ballDirY = -1   # -1 = up 1 = down
-
     # creates Rectangles for ball and paddles
     paddle1 = pygame.Rect(PADDLEOFFSET, playerOnePosition, LINETHICKNESS, PADDLESIZE)
     paddle2 = pygame.Rect(WIDTH - PADDLEOFFSET - LINETHICKNESS, playerTwoPosition, LINETHICKNESS, PADDLESIZE)
-    ball = pygame.Rect(ballX, ballY, LINETHICKNESS, LINETHICKNESS)
 
     # draws the starting position of the Arena
     drawArena()
@@ -168,17 +171,19 @@ def main():
             drawPaddle(paddle2)
             drawBall(ball)
 
-            ball = moveBall(ball, ballDirX, ballDirY)
-            ballDirX, ballDirY = checkEdgeCollision(ball, ballDirX, ballDirY)
-            ballDirX = ballDirX * checkPaddleCollision(ball, paddle1, paddle2, ballDirX)
+            moveBall(ball)
+            checkEdgeCollision(ball)
+            checkPaddleCollision(ball, paddle1, paddle2)
+            
             p1_score, p2_score, hit = checkScore(ball, p1_score, p2_score)
-            paddle2 = computerMove (ball, ballDirX, paddle2)
+            paddle2 = computerMove (ball, paddle2)
+            
             displayScore(p1_score, p2_score)
             game_over = p1_score + p2_score == MAX_SCORE
 
             if hit:
-                ball.x = ballX = ORIGIN_X
-                ball.y = ballY = ORIGIN_Y
+                ball.x = ORIGIN_X
+                ball.y = ORIGIN_Y
                 hit = False
                 pygame.time.wait(1000)
         else:
